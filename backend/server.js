@@ -22,6 +22,8 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.get('/', (req, res) => res.send('OK'));
+
 
 const PORT = process.env.PORT || 4000;
 const FRONTEND_BASE = process.env.FRONTEND_BASE || 'http://localhost:5500';

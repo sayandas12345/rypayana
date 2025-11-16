@@ -1,5 +1,5 @@
 // ---------- VERY SIMPLE, SAFE frontend/app.js ----------
-const API = "http://localhost:4000/api";
+const API = "https://<rypayana>.onrender.com/api";
 
 // helper to get element safely
 function el(id){ return document.getElementById(id) || null; }
