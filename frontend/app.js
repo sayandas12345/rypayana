@@ -1,13 +1,15 @@
-// app.js — final version (replace your file with this)
+// app.js — final patched version (no auto-restore on load)
 const API = (typeof window !== 'undefined' && window.API) ? window.API : "https://rupayana.onrender.com";
 console.log('Using API base:', API);
 
 function el(id){ return document.getElementById(id) || null; }
 function saveUser(user){ try { sessionStorage.setItem("user", JSON.stringify(user)); localStorage.setItem("rupayana_user", JSON.stringify(user)); } catch(e){} }
 function getUser(){ try { return JSON.parse(sessionStorage.getItem("user") || localStorage.getItem("rupayana_user") || "null"); } catch(e){ return null; } }
+// NOTE: we intentionally DO NOT auto-restore a session on page load.
+// If you want auto-restore later, call restoreUser() explicitly from a "Resume session" button.
 function restoreUser(){ if(!sessionStorage.getItem("user") && localStorage.getItem("rupayana_user")) sessionStorage.setItem("user", localStorage.getItem("rupayana_user")); }
-restoreUser();
 
+// safe fetch wrapper
 async function safeFetch(url, opts){
   try {
     const res = await fetch(url, opts);
@@ -38,6 +40,7 @@ function showDashboard(user){
   saveUser(user);
 }
 
+// Bind handlers on DOM ready
 document.addEventListener("DOMContentLoaded", function(){
 
   // LOGIN
@@ -92,22 +95,120 @@ document.addEventListener("DOMContentLoaded", function(){
     });
   }
 
-  // Profile / Transfer / Bill / Transactions / Admin functions
-  window.showProfile = function(){ const user = getUser(); if(!user) return showAuth(); const panel = el("panel"); if(!panel) return; panel.innerHTML = `<h3>Profile</h3><input id="p-name" value="${user.name||''}" /><input id="p-email" value="${user.email||''}" disabled /><input id="p-phone" value="${user.phone||''}" /><button id="btn-save">Save</button><p id="p-msg"></p>`; const btnSave = el("btn-save"); if (btnSave) btnSave.onclick = async () => { const name = el("p-name").value; const phone = el("p-phone").value; try { const data = await safeFetch(API + "/api/update-profile", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ email: user.email, name, phone }) }); if (data && data.user) { saveUser(data.user); } if (el("p-msg")) el("p-msg").innerText = data && (data.message||'Updated') || 'Updated'; } catch(e){ if (el("p-msg")) el("p-msg").innerText = e.message || "Network error"; } }; };
+  // Profile
+  window.showProfile = function(){
+    const user = getUser(); if(!user) return showAuth();
+    const panel = el("panel"); if(!panel) return;
+    panel.innerHTML = `
+      <h3>Profile</h3>
+      <input id="p-name" value="${user.name||''}" />
+      <input id="p-email" value="${user.email||''}" disabled />
+      <input id="p-phone" value="${user.phone||''}" />
+      <button id="btn-save">Save</button>
+      <p id="p-msg"></p>
+    `;
+    const btnSave = el("btn-save");
+    if (btnSave) btnSave.onclick = async () => {
+      const name = el("p-name").value; const phone = el("p-phone").value;
+      try {
+        const data = await safeFetch(API + "/api/update-profile", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ email: user.email, name, phone }) });
+        if (data && data.user) { saveUser(data.user); }
+        if (el("p-msg")) el("p-msg").innerText = data && (data.message||'Updated') || 'Updated';
+      } catch(e){ if (el("p-msg")) el("p-msg").innerText = e.message || "Network error"; }
+    };
+  };
 
-  window.showTransfer = function(){ const user = getUser(); if(!user) return showAuth(); const panel = el("panel"); if(!panel) return; panel.innerHTML = `<h3>Fund Transfer</h3><input id="t-to" placeholder="Recipient Email/UPI" /><input id="t-amt" placeholder="Amount" /><select id="t-mode"><option value="upi">UPI</option><option value="bank">Bank</option></select><button id="btn-send" type="button">Send</button><p id="t-msg"></p>`; const btnSend = el("btn-send"); if (btnSend) btnSend.onclick = async () => { const to = el("t-to").value; const amt = parseFloat(el("t-amt").value); const mode = el("t-mode").value; if(!to || !amt){ if(el("t-msg")) el("t-msg").innerText = "Enter valid inputs"; return; } try { const user = getUser(); const data = await safeFetch(API + "/api/transfer", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ fromEmail: user.email, toEmail: to, amount: amt, mode }) }); if(el("t-msg")) el("t-msg").innerText = data && (data.message || 'Done') || 'Done'; saveUser(user); } catch(e){ if(el("t-msg")) el("t-msg").innerText = e.message || "Network error"; } }; };
+  // Transfer
+  window.showTransfer = function(){
+    const user = getUser(); if(!user) return showAuth();
+    const panel = el("panel"); if(!panel) return;
+    panel.innerHTML = `
+      <h3>Fund Transfer</h3>
+      <input id="t-to" placeholder="Recipient Email/UPI" />
+      <input id="t-amt" placeholder="Amount" />
+      <select id="t-mode"><option value="upi">UPI</option><option value="bank">Bank</option></select>
+      <button id="btn-send" type="button">Send</button>
+      <p id="t-msg"></p>
+    `;
+    const btnSend = el("btn-send");
+    if (btnSend) btnSend.onclick = async () => {
+      const to = el("t-to").value; const amt = parseFloat(el("t-amt").value); const mode = el("t-mode").value;
+      if(!to || !amt){ if(el("t-msg")) el("t-msg").innerText = "Enter valid inputs"; return; }
+      try {
+        const user = getUser();
+        const data = await safeFetch(API + "/api/transfer", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ fromEmail: user.email, toEmail: to, amount: amt, mode }) });
+        if(el("t-msg")) el("t-msg").innerText = data && (data.message || 'Done') || 'Done';
+        saveUser(user);
+      } catch(e){ if(el("t-msg")) el("t-msg").innerText = e.message || "Network error"; }
+    };
+  };
 
-  window.showBill = function(){ const user = getUser(); if(!user) return showAuth(); const panel = el("panel"); if(!panel) return; panel.innerHTML = `<h3>Bill Payment</h3><input id="b-biller" placeholder="Biller name" /><input id="b-amt" placeholder="Amount" /><button id="btn-pay" type="button">Pay</button><p id="b-msg"></p>`; const btnPay = el("btn-pay"); if (btnPay) btnPay.onclick = async () => { const biller = el("b-biller").value; const amt = parseFloat(el("b-amt").value); if(!biller || !amt){ if(el("b-msg")) el("b-msg").innerText = "Enter valid inputs"; return; } try { const user = getUser(); const data = await safeFetch(API + "/api/billpay", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ email: user.email, biller, amount: amt }) }); if(el("b-msg")) el("b-msg").innerText = data && (data.message || 'Done') || 'Done'; saveUser(user); } catch(e){ if(el("b-msg")) el("b-msg").innerText = e.message || "Network error"; } }; };
+  // Billpay
+  window.showBill = function(){
+    const user = getUser(); if(!user) return showAuth();
+    const panel = el("panel"); if(!panel) return;
+    panel.innerHTML = `
+      <h3>Bill Payment</h3>
+      <input id="b-biller" placeholder="Biller name" />
+      <input id="b-amt" placeholder="Amount" />
+      <button id="btn-pay" type="button">Pay</button>
+      <p id="b-msg"></p>
+    `;
+    const btnPay = el("btn-pay");
+    if (btnPay) btnPay.onclick = async () => {
+      const biller = el("b-biller").value; const amt = parseFloat(el("b-amt").value);
+      if(!biller || !amt){ if(el("b-msg")) el("b-msg").innerText = "Enter valid inputs"; return; }
+      try {
+        const user = getUser();
+        const data = await safeFetch(API + "/api/billpay", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ email: user.email, biller, amount: amt }) });
+        if(el("b-msg")) el("b-msg").innerText = data && (data.message || 'Done') || 'Done';
+        saveUser(user);
+      } catch(e){ if(el("b-msg")) el("b-msg").innerText = e.message || "Network error"; }
+    };
+  };
 
-  window.showTx = async function(){ const user = getUser(); if(!user) return showAuth(); const panel = el("panel"); if(!panel) return; try { const data = await safeFetch(API + "/api/transactions?email=" + encodeURIComponent(user.email)); if (data && Array.isArray(data.transactions)) { if (data.transactions.length === 0) panel.innerHTML = '<h3>Transactions</h3><p>No transactions</p>'; else panel.innerHTML = '<h3>Transactions</h3>' + data.transactions.map(t => `<div>${new Date(t.created_at*1000).toLocaleString()} | ${t.type||''} | ₹ ${t.amount} | ${t.details||''}</div>`).join(''); } else { panel.innerHTML = '<p>No transactions</p>'; } } catch(e){ panel.innerHTML = '<p>Network error</p>'; } };
+  // Transactions
+  window.showTx = async function(){
+    const user = getUser(); if(!user) return showAuth();
+    const panel = el("panel"); if(!panel) return;
+    try {
+      const data = await safeFetch(API + "/api/transactions?email=" + encodeURIComponent(user.email));
+      if (data && Array.isArray(data.transactions)) {
+        if (data.transactions.length === 0) panel.innerHTML = '<h3>Transactions</h3><p>No transactions</p>';
+        else panel.innerHTML = '<h3>Transactions</h3>' + data.transactions.map(t => `<div>${new Date(t.created_at*1000).toLocaleString()} | ${t.type||''} | ₹ ${t.amount} | ${t.details||''}</div>`).join('');
+      } else {
+        panel.innerHTML = '<p>No transactions</p>';
+      }
+    } catch(e){
+      panel.innerHTML = '<p>Network error</p>';
+    }
+  };
 
-  window.showAdminPanel = async function(){ const user = getUser(); if(!user || !user.isAdmin) { if(el("panel")) el("panel").innerHTML = "<p>Not authorized</p>"; return; } const panel = el("panel"); if(!panel) return; panel.innerHTML = `<h3>Admin</h3><button id="btn-users">Users</button><button id="btn-reports">Reports</button><div id="admin-box"></div>`; const bUsers = el("btn-users"); if (bUsers) bUsers.onclick = async () => { try { const data = await safeFetch(API + "/api/admin/users"); if (el("admin-box")) el("admin-box").innerHTML = (data && data.users) ? data.users.map(u=>`<div>${u.id} • ${u.name} • ${u.email}</div>`).join('') : 'No users'; } catch(e){ if(el("admin-box")) el("admin-box").innerText = 'Err'; } }; const bReports = el("btn-reports"); if (bReports) bReports.onclick = async () => { try { const data = await safeFetch(API + "/api/admin/reports"); if(el("admin-box")) el("admin-box").innerText = JSON.stringify(data); } catch(e){ if(el("admin-box")) el("admin-box").innerText = 'Err'; } }; };
+  // Admin panel
+  window.showAdminPanel = async function(){
+    const user = getUser(); if(!user || !user.isAdmin) { if(el("panel")) el("panel").innerHTML = "<p>Not authorized</p>"; return; }
+    const panel = el("panel"); if(!panel) return;
+    panel.innerHTML = `<h3>Admin</h3><button id="btn-users">Users</button><button id="btn-reports">Reports</button><div id="admin-box"></div>`;
+    const bUsers = el("btn-users");
+    if (bUsers) bUsers.onclick = async () => {
+      try {
+        const data = await safeFetch(API + "/api/admin/users");
+        if (el("admin-box")) el("admin-box").innerHTML = (data && data.users) ? data.users.map(u=>`<div>${u.id} • ${u.name} • ${u.email}</div>`).join('') : 'No users';
+      } catch(e){ if(el("admin-box")) el("admin-box").innerText = 'Err'; }
+    };
+    const bReports = el("btn-reports");
+    if (bReports) bReports.onclick = async () => {
+      try { const data = await safeFetch(API + "/api/admin/reports"); if(el("admin-box")) el("admin-box").innerText = JSON.stringify(data); } catch(e){ if(el("admin-box")) el("admin-box").innerText = 'Err'; }
+    };
+  };
 
+  // Logout (clears both storages)
   window.logout = function(){ sessionStorage.removeItem("user"); localStorage.removeItem("rupayana_user"); showAuth(); };
 
-  const u = getUser();
-  if (u) showDashboard(u);
+  // IMPORTANT: do NOT auto-restore or auto-show dashboard on page load.
+  // User must explicitly login to be shown the dashboard.
 });
+
 
 
 
