@@ -1,4 +1,4 @@
-// server.js — updated (includes safe migration for missing transaction columns)
+// server.js — final patched version (strict login + safe migrations + CORS)
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
@@ -126,15 +126,37 @@ app.post(['/api/register','/register'], (req, res) => {
   } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// LOGIN
+// LOGIN (strict: user must exist and password must be present and match exactly)
 app.post(['/api/login','/login'], (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) return safeJSON(res,400,{ error:'Missing email or password' });
+
     db.get('SELECT id,name,email,password,phone,isAdmin FROM users WHERE LOWER(email) = LOWER(?)', [email], (err,row) => {
-      if (err){ console.error('login db err', err); return safeJSON(res,500,{error:'DB error'}); }
-      if (!row || row.password !== password) return safeJSON(res,401,{ error:'Invalid credentials' });
+      if (err) {
+        console.error('login db err', err && (err.stack || err));
+        return safeJSON(res,500,{ error:'DB error' });
+      }
+
+      if (!row) {
+        console.warn('Login failed - no user:', email);
+        return safeJSON(res,401,{ error:'Invalid credentials' });
+      }
+
+      // reject if password missing / null / empty
+      if (!row.password) {
+        console.warn('Login failed - user has no password set:', email);
+        return safeJSON(res,401,{ error:'Invalid credentials' });
+      }
+
+      // exact match required (in future: switch to bcrypt compare)
+      if (String(row.password) !== String(password)) {
+        console.warn('Login failed - wrong password for:', email);
+        return safeJSON(res,401,{ error:'Invalid credentials' });
+      }
+
       const user = { id: row.id, name: row.name, email: row.email, phone: row.phone, isAdmin: row.isAdmin };
+      console.log('Login success for:', email);
       return safeJSON(res,200,{ user });
     });
   } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
@@ -254,6 +276,7 @@ app.use((err, req, res, next) => {
 // start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
