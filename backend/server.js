@@ -1,4 +1,4 @@
-// server.js — final version (replace your file with this)
+// server.js — updated (includes safe migration for missing transaction columns)
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
@@ -59,14 +59,48 @@ db.serialize(() => {
 
   db.run(`CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    from_email TEXT,
-    to_email TEXT,
-    amount REAL,
-    type TEXT,
-    details TEXT,
+    -- older DBs might have different columns; migration below will add missing ones
     created_at INTEGER DEFAULT (strftime('%s','now'))
   );`, e => { if (e) console.error('transactions table error:', e); });
 });
+
+/*
+  SAFE MIGRATION: ensure transactions table has the expected columns.
+  This will add missing columns without destroying existing data.
+  Place after the DB is opened and tables created above.
+*/
+(function ensureTransactionColumns() {
+  db.serialize(() => {
+    db.all("PRAGMA table_info(transactions);", (err, cols) => {
+      if (err) {
+        console.error('PRAGMA table_info error (transactions):', err);
+        return;
+      }
+      const existing = (cols || []).map(c => c.name);
+      const needed = [
+        { name: 'from_email', sql: "ALTER TABLE transactions ADD COLUMN from_email TEXT;" },
+        { name: 'to_email',   sql: "ALTER TABLE transactions ADD COLUMN to_email TEXT;" },
+        { name: 'amount',     sql: "ALTER TABLE transactions ADD COLUMN amount REAL;" },
+        { name: 'type',       sql: "ALTER TABLE transactions ADD COLUMN type TEXT;" },
+        { name: 'details',    sql: "ALTER TABLE transactions ADD COLUMN details TEXT;" },
+        // created_at column was defined above with default; keep here for safety if missing
+        { name: 'created_at', sql: "ALTER TABLE transactions ADD COLUMN created_at INTEGER DEFAULT (strftime('%s','now'));" }
+      ];
+      needed.forEach(col => {
+        if (!existing.includes(col.name)) {
+          db.run(col.sql, (e) => {
+            if (e) {
+              // Log but don't crash (some hosts may return "duplicate column" if concurrent)
+              console.error(`Could not add column ${col.name}:`, e && (e.message || e));
+            } else {
+              console.log(`Added missing column to transactions: ${col.name}`);
+            }
+          });
+        }
+      });
+    });
+  });
+})();
 
 function genToken(){ return crypto.randomBytes(24).toString('hex'); }
 function safeJSON(res, status, obj){ res.status(status).json(obj); }
@@ -220,6 +254,7 @@ app.use((err, req, res, next) => {
 // start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
