@@ -1,24 +1,39 @@
-// server.js (REPLACE your file with this)
+// server.js — final version (replace your file with this)
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
 
-// middlewares
-app.use(bodyParser.json());
-app.use(cors()); // allow all origins for now (change to specific origin in production)
+/*
+  CORS + Preflight handler
+  - During testing we allow all origins ('*') so Vercel can call the API.
+  - Later replace '*' with a strict allowlist (allowedOrigins) for production.
+*/
+app.use((req, res, next) => {
+  // Replace '*' with specific origin like 'https://rupayana.vercel.app' after testing
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-// simple request logger
+// JSON body parsing
+app.use(bodyParser.json());
+
+// Request logger (helpful in Render logs)
 app.use((req, res, next) => {
   console.log(new Date().toISOString(), req.method, req.url);
   next();
 });
 
-// health check
+// Health check
 app.get('/', (req, res) => res.send('OK'));
 
 // DB
@@ -28,7 +43,7 @@ const db = new sqlite3.Database(DB_FILE, (err) => {
   else console.log('SQLite DB opened:', DB_FILE);
 });
 
-// Create required tables if not present
+// Ensure tables exist (safe to run every start)
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,10 +51,11 @@ db.serialize(() => {
     email TEXT UNIQUE,
     password TEXT,
     phone TEXT,
+    role TEXT,
     isAdmin INTEGER DEFAULT 0,
     resetToken TEXT,
     resetExpires INTEGER
-  );`, (e) => { if (e) console.error('users table error:', e); });
+  );`, e => { if (e) console.error('users table error:', e); });
 
   db.run(`CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,152 +65,153 @@ db.serialize(() => {
     type TEXT,
     details TEXT,
     created_at INTEGER DEFAULT (strftime('%s','now'))
-  );`, (e) => { if (e) console.error('transactions table error:', e); });
+  );`, e => { if (e) console.error('transactions table error:', e); });
 });
 
-// helper
 function genToken(){ return crypto.randomBytes(24).toString('hex'); }
 function safeJSON(res, status, obj){ res.status(status).json(obj); }
 
-// ROUTES (all return JSON)
+/* -----------------------
+   ROUTES
+   ----------------------- */
 
-// --- AUTH: register /api/register
+// REGISTER
 app.post(['/api/register','/register'], (req, res) => {
   try {
     const { name, email, password, phone } = req.body || {};
-    if (!email || !password) return safeJSON(res, 400, { error: 'Missing email or password' });
+    if (!email || !password) return safeJSON(res,400,{ error:'Missing email or password' });
     const stmt = db.prepare('INSERT INTO users (name,email,password,phone) VALUES (?,?,?,?)');
-    stmt.run(name || '', email, password, phone || '', function(err){
-      if (err){
-        if (err.code === 'SQLITE_CONSTRAINT') return safeJSON(res, 409, { error: 'Email already exists' });
-        console.error('register err', err); return safeJSON(res, 500, { error: 'DB error' });
+    stmt.run(name||'', email, password, phone||'', function(err){
+      if (err) {
+        if (err.code === 'SQLITE_CONSTRAINT') return safeJSON(res,409,{ error:'Email already exists' });
+        console.error('register err', err); return safeJSON(res,500,{ error:'DB error' });
       }
-      return safeJSON(res, 200, { user: { id: this.lastID, name, email, phone } });
+      return safeJSON(res,200,{ user: { id:this.lastID, name, email, phone } });
     });
     stmt.finalize();
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- LOGIN: /api/login
+// LOGIN
 app.post(['/api/login','/login'], (req, res) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) return safeJSON(res, 400, { error: 'Missing email or password' });
-    db.get('SELECT id,name,email,password,phone,isAdmin FROM users WHERE email = ?', [email], (err,row) => {
+    if (!email || !password) return safeJSON(res,400,{ error:'Missing email or password' });
+    db.get('SELECT id,name,email,password,phone,isAdmin FROM users WHERE LOWER(email) = LOWER(?)', [email], (err,row) => {
       if (err){ console.error('login db err', err); return safeJSON(res,500,{error:'DB error'}); }
       if (!row || row.password !== password) return safeJSON(res,401,{ error:'Invalid credentials' });
       const user = { id: row.id, name: row.name, email: row.email, phone: row.phone, isAdmin: row.isAdmin };
       return safeJSON(res,200,{ user });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- UPDATE PROFILE
+// UPDATE PROFILE
 app.post(['/api/update-profile','/update-profile'], (req,res) => {
   try {
     const { email, name, phone } = req.body || {};
-    if (!email) return safeJSON(res,400,{error:'Missing email'});
-    db.run('UPDATE users SET name=?, phone=? WHERE email=?', [name||'', phone||'', email], function(err){
+    if (!email) return safeJSON(res,400,{ error:'Missing email' });
+    db.run('UPDATE users SET name=?, phone=? WHERE LOWER(email)=LOWER(?)', [name||'', phone||'', email], function(err){
       if (err){ console.error('update-profile err', err); return safeJSON(res,500,{error:'DB error'}); }
-      db.get('SELECT id,name,email,phone FROM users WHERE email=?', [email], (e,row) => {
+      db.get('SELECT id,name,email,phone FROM users WHERE LOWER(email)=LOWER(?)', [email], (e,row) => {
         if (e){ console.error(e); return safeJSON(res,500,{error:'DB error'}); }
         return safeJSON(res,200,{ user: row, message:'Profile updated' });
       });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- CREATE TRANSACTION (transfer)
+// TRANSFER / TRANSACTION
 app.post(['/api/transfer','/transfer','/api/transaction','/transaction'], (req,res) => {
   try {
     const { fromEmail, toEmail, amount, mode, type, details } = req.body || {};
     const from = fromEmail || req.body.from;
     const to = toEmail || req.body.to;
-    const amt = (amount!==undefined) ? amount : req.body.amount;
-    if (!from || !to || !amt) return safeJSON(res,400,{error:'Missing fields'});
+    const amt = (amount !== undefined) ? amount : req.body.amount;
+    if (!from || !to || !amt) return safeJSON(res,400,{ error:'Missing fields' });
     const ttype = type || (mode ? mode : 'transfer');
     const stmt = db.prepare('INSERT INTO transactions (from_email,to_email,amount,type,details) VALUES (?,?,?,?,?)');
-    stmt.run(from, to, amt, ttype, details || '', function(err){
+    stmt.run(from, to, amt, ttype, details||'', function(err){
       if (err){ console.error('insert tx err', err); return safeJSON(res,500,{error:'DB error'}); }
-      return safeJSON(res,200,{ id: this.lastID, from, to, amount: amt, type: ttype });
+      return safeJSON(res,200,{ id:this.lastID, from, to, amount:amt, type:ttype });
     });
     stmt.finalize();
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- BILL PAY (thin wrapper)
+// BILLPAY
 app.post(['/api/billpay','/billpay'], (req,res) => {
   try {
     const { email, biller, amount } = req.body || {};
-    if (!email || !biller || !amount) return safeJSON(res,400,{error:'Missing fields'});
+    if (!email || !biller || !amount) return safeJSON(res,400,{ error:'Missing fields' });
     const stmt = db.prepare('INSERT INTO transactions (from_email,to_email,amount,type,details) VALUES (?,?,?,?,?)');
     stmt.run(email, biller, amount, 'bill', `biller:${biller}`, function(err){
       if (err){ console.error('billpay insert err', err); return safeJSON(res,500,{error:'DB error'}); }
-      return safeJSON(res,200,{ id: this.lastID, message:'Bill paid' });
+      return safeJSON(res,200,{ id:this.lastID, message:'Bill paid' });
     });
     stmt.finalize();
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- GET transactions for an email
+// GET TRANSACTIONS
 app.get(['/api/transactions','/transactions'], (req,res) => {
   try {
     const email = req.query.email;
     if (!email) return safeJSON(res,400,{ error:'Missing email query param' });
-    db.all('SELECT id,from_email,to_email,amount,type,details,created_at FROM transactions WHERE from_email = ? OR to_email = ? ORDER BY created_at DESC', [email,email], (err, rows) => {
+    db.all('SELECT id,from_email,to_email,amount,type,details,created_at FROM transactions WHERE LOWER(from_email)=LOWER(?) OR LOWER(to_email)=LOWER(?) ORDER BY created_at DESC', [email,email], (err, rows) => {
       if (err){ console.error('select tx err', err); return safeJSON(res,500,{error:'DB error'}); }
-      return safeJSON(res,200, { transactions: rows || [] });
+      return safeJSON(res,200,{ transactions: rows || [] });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// --- ADMIN: list users (simple)
+// ADMIN: list users
 app.get(['/api/admin/users','/admin/users'], (req,res) => {
   try {
     db.all('SELECT id,name,email,phone,isAdmin FROM users ORDER BY id DESC', [], (err, rows) => {
       if (err){ console.error('admin users err', err); return safeJSON(res,500,{error:'DB error'}); }
-      return safeJSON(res,200, { users: rows || [] });
+      return safeJSON(res,200,{ users: rows || [] });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// Password reset endpoints kept as before (API prefix)
+// PASSWORD RESET
 app.post(['/api/request-reset','/request-reset'], (req,res) => {
   try {
     const { email } = req.body || {};
-    if (!email) return safeJSON(res,400,{error:'Missing'});
-    db.get('SELECT id FROM users WHERE email = ?', [email], (err,user) => {
+    if (!email) return safeJSON(res,400,{ error:'Missing' });
+    db.get('SELECT id FROM users WHERE LOWER(email)=LOWER(?)', [email], (err,user) => {
       if (err){ console.error(err); return safeJSON(res,500,{error:'DB error'}); }
-      if (!user) return safeJSON(res,404,{error:'No user with that email'});
+      if (!user) return safeJSON(res,404,{ error:'No user with that email' });
       const token = genToken();
       const expires = Date.now() + 1000*60*60;
-      db.run('UPDATE users SET resetToken=?, resetExpires=? WHERE email=?', [token,expires,email], (uErr) => {
+      db.run('UPDATE users SET resetToken=?, resetExpires=? WHERE LOWER(email)=LOWER(?)', [token,expires,email], (uErr) => {
         if (uErr){ console.error(uErr); return safeJSON(res,500,{error:'DB error'}); }
-        const FRONTEND_BASE = process.env.FRONTEND_BASE || 'https://your-frontend.vercel.app';
+        const FRONTEND_BASE = process.env.FRONTEND_BASE || 'https://rupayana.vercel.app';
         const resetLink = `${FRONTEND_BASE}/reset.html?token=${token}&email=${encodeURIComponent(email)}`;
-        return safeJSON(res,200, { message:'Reset link created', resetLink });
+        return safeJSON(res,200,{ message:'Reset link created', resetLink });
       });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
 app.post(['/api/reset-password','/reset-password'], (req,res) => {
   try {
     const { email, token, newPassword } = req.body || {};
-    if (!email || !token || !newPassword) return safeJSON(res,400,{error:'Missing'});
-    db.get('SELECT resetToken,resetExpires FROM users WHERE email=?', [email], (err,row) => {
+    if (!email || !token || !newPassword) return safeJSON(res,400,{ error:'Missing' });
+    db.get('SELECT resetToken,resetExpires FROM users WHERE LOWER(email)=LOWER(?)', [email], (err,row) => {
       if (err){ console.error(err); return safeJSON(res,500,{error:'DB error'}); }
-      if (!row) return safeJSON(res,404,{error:'User not found'});
-      if (row.resetToken !== token || Date.now() > row.resetExpires) return safeJSON(res,400,{error:'Invalid or expired token'});
-      db.run('UPDATE users SET password=?, resetToken=NULL, resetExpires=NULL WHERE email=?', [newPassword,email], (uerr) => {
+      if (!row) return safeJSON(res,404,{ error:'User not found' });
+      if (row.resetToken !== token || Date.now() > row.resetExpires) return safeJSON(res,400,{ error:'Invalid or expired token' });
+      db.run('UPDATE users SET password=?, resetToken=NULL, resetExpires=NULL WHERE LOWER(email)=LOWER(?)', [newPassword,email], (uerr) => {
         if (uerr){ console.error(uerr); return safeJSON(res,500,{error:'DB error'}); }
         return safeJSON(res,200,{ message:'Password updated' });
       });
     });
-  } catch(err){ console.error(err); safeJSON(res,500,{error:'Server error'}); }
+  } catch(e){ console.error(e); safeJSON(res,500,{error:'Server error'}); }
 });
 
-// global error handler (fallback)
+// global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err && (err.stack || err));
   if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
@@ -203,5 +220,6 @@ app.use((err, req, res, next) => {
 // start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
