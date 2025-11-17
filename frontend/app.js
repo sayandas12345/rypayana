@@ -1,102 +1,56 @@
-// =========================
-//  FRONTEND APP.JS (ENHANCED)
-// =========================
+// FRONTEND APP.JS — updated with avatar generator & extra content
 
-// API base — preserved and explicit
 const API = (typeof window !== 'undefined' && window.API)
   ? window.API
   : "https://rupayana.onrender.com";
 
 console.log("[app] Using API base:", API);
 
-// ---------- Helpers ----------
+// ---------- helpers ----------
 function el(id){ return document.getElementById(id) || null; }
-function showSpinner(show){
-  const s = el('global-spinner');
-  if (!s) return;
-  if (show) s.classList.add('active'); else s.classList.remove('active');
-}
-function saveUser(user){
-  try {
-    sessionStorage.setItem("user", JSON.stringify(user));
-    localStorage.setItem("rupayana_user", JSON.stringify(user));
-  } catch(e){ console.warn("saveUser error", e); }
-}
-function getUser(){
-  try {
-    return JSON.parse(sessionStorage.getItem("user") || localStorage.getItem("rupayana_user") || "null");
-  } catch(e){ return null; }
-}
-function restoreUser(){
-  if(!sessionStorage.getItem("user") && localStorage.getItem("rupayana_user")){
-    sessionStorage.setItem("user", localStorage.getItem("rupayana_user"));
-  }
+function showSpinner(show){ const s = el('global-spinner'); if (!s) return; if (show) s.classList.add('active'); else s.classList.remove('active'); }
+function saveUser(user){ try { sessionStorage.setItem("user", JSON.stringify(user)); localStorage.setItem("rupayana_user", JSON.stringify(user)); } catch(e){ console.warn("saveUser", e); } }
+function getUser(){ try { return JSON.parse(sessionStorage.getItem("user") || localStorage.getItem("rupayana_user") || "null"); } catch(e){ return null; } }
+function restoreUser(){ if(!sessionStorage.getItem("user") && localStorage.getItem("rupayana_user")) sessionStorage.setItem("user", localStorage.getItem("rupayana_user")); }
+
+// ---------- avatar SVG generator (data URI) ----------
+function svgAvatarDataUri(name = "R", size = 128) {
+  const initial = (name && String(name).trim().charAt(0).toUpperCase()) || "R";
+  // choose a background gradient based on char code
+  const code = initial.charCodeAt(0);
+  const a1 = ['#6e8cff','#7ed3ff','#ffd36e','#ff9f6e','#b388ff'][code % 5];
+  const a2 = ['#7ed3ff','#6e8cff','#ff9f6e','#b388ff','#ffd36e'][(code+2) % 5];
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 ${size} ${size}'>
+      <defs>
+        <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
+          <stop offset='0' stop-color='${a1}' />
+          <stop offset='1' stop-color='${a2}' />
+        </linearGradient>
+      </defs>
+      <rect rx="${Math.round(size*0.18)}" width='100%' height='100%' fill='url(#g)' />
+      <text x='50%' y='58%' text-anchor='middle' font-family='Inter,Arial' font-size='${Math.round(size*0.5)}' fill='white' font-weight='700'>${initial}</text>
+    </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-// ---------- safeFetch with spinner ----------
-async function safeFetch(url, opts = {}){
-  const full = url.startsWith('http') ? url : API + url;
-  const defaults = { credentials:'include', headers:{ 'Accept':'application/json' } };
-  const final = Object.assign({}, defaults, opts); final.headers = Object.assign({}, defaults.headers, opts.headers || {});
-  console.log('[safeFetch] ->', final.method || 'GET', full);
-  showSpinner(true);
-  try {
-    const res = await fetch(full, final);
-    const text = await res.text().catch(()=> '');
-    let json = null;
-    try { json = text ? JSON.parse(text) : null; } catch(e){ json = null; }
-    if (!res.ok) {
-      if (res.status === 401) {
-        sessionStorage.removeItem('user'); localStorage.removeItem('rupayana_user');
-        renderApp();
-        throw new Error(json?.message || json?.error || 'Invalid credentials');
-      }
-      throw new Error(json?.message || json?.error || text || `HTTP ${res.status}`);
-    }
-    return json;
-  } catch(err){
-    console.error('[safeFetch] error', err);
-    throw err;
-  } finally { showSpinner(false); }
-}
-
-// ---------- UI rendering ----------
-function showAuth(){
-  if (el('auth')) el('auth').style.display = 'block';
-  if (el('dashboard')) el('dashboard').style.display = 'none';
-  if (el('logout-btn')) el('logout-btn').style.display = 'none';
-  if (el('user-chip')) el('user-chip').style.display = 'none';
-}
-function animateBalanceElm(amount){
-  const elBal = el('balance');
-  if (!elBal) return;
-  const start = Number(elBal.dataset.current || 0);
-  const end = Number(amount || 0);
-  elBal.dataset.current = end;
-  const dur = 700; const t0 = performance.now();
-  function step(now){
-    const t = Math.min(1, (now - t0)/dur);
-    const eased = (--t)*t*t+1;
-    const val = Math.round(start + (end - start)*eased);
-    elBal.innerText = '₹ ' + val.toLocaleString();
-    if (now - t0 < dur) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-// ---------- Profile picture handling ----------
+// ---------- profile pic logic ----------
 const PROFILE_PIC_KEY = 'rupayana_profile_pic';
-function loadProfilePic(){
-  const data = localStorage.getItem(PROFILE_PIC_KEY);
-  if (data) {
-    const imgs = document.querySelectorAll('#profile-pic-display, #sidebar-avatar, #user-avatar');
-    imgs.forEach(i => { if (i) i.src = data; });
-  } else {
-    // set placeholders (gradient background handled by CSS)
-    const imgs = document.querySelectorAll('#profile-pic-display, #sidebar-avatar, #user-avatar');
-    imgs.forEach(i => { if (i) i.src = ''; });
-  }
+function loadProfilePic() {
+  const stored = localStorage.getItem(PROFILE_PIC_KEY);
+  const user = getUser();
+  const name = user ? (user.name || user.email || 'R') : 'R';
+  const fallback = svgAvatarDataUri(name, 128);
+
+  const sel = ['profile-pic-display','sidebar-avatar','user-avatar'];
+  sel.forEach(id => {
+    const img = el(id);
+    if (!img) return;
+    if (stored) img.src = stored;
+    else img.src = fallback;
+  });
 }
+
 function handleProfilePicFile(file){
   if (!file) return;
   const reader = new FileReader();
@@ -108,7 +62,34 @@ function handleProfilePicFile(file){
   reader.readAsDataURL(file);
 }
 
-// ---------- Chart (vanilla canvas sparkline) ----------
+// ---------- safeFetch with spinner ----------
+async function safeFetch(url, opts = {}) {
+  const full = url.startsWith('http') ? url : API + url;
+  const defaults = { credentials: 'include', headers: { 'Accept': 'application/json' } };
+  const final = Object.assign({}, defaults, opts);
+  final.headers = Object.assign({}, defaults.headers, opts.headers || {});
+  console.log('[safeFetch]', final.method || 'GET', full);
+  showSpinner(true);
+  try {
+    const res = await fetch(full, final);
+    const txt = await res.text().catch(()=>'');
+    let json = null;
+    try { json = txt ? JSON.parse(txt) : null; } catch(e){ json = null; }
+    if (!res.ok) {
+      if (res.status === 401) {
+        sessionStorage.removeItem('user'); localStorage.removeItem('rupayana_user'); renderApp();
+        throw new Error(json?.message || 'Invalid credentials');
+      }
+      throw new Error(json?.message || txt || `HTTP ${res.status}`);
+    }
+    return json;
+  } catch(err){
+    console.error('[safeFetch] error', err);
+    throw err;
+  } finally { showSpinner(false); }
+}
+
+// ---------- chart drawing ----------
 function drawChart(values){
   const canvas = el('balance-chart');
   if (!canvas) return;
@@ -117,180 +98,103 @@ function drawChart(values){
   const h = canvas.height = canvas.clientHeight;
   ctx.clearRect(0,0,w,h);
   if (!values || !values.length) {
-    // draw placeholder
-    ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0,0,w,h);
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.font = '12px sans-serif'; ctx.fillText('No data', 8, 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.font = '12px Arial'; ctx.fillText('No transaction data', 12, 20);
     return;
   }
   const max = Math.max(...values);
   const min = Math.min(...values);
-  const pad = 12;
+  const pad = 10;
   ctx.lineWidth = 2;
-  // gradient stroke
-  const g = ctx.createLinearGradient(0,0,w,0);
-  g.addColorStop(0, 'rgba(110,140,255,0.9)');
-  g.addColorStop(1, 'rgba(126,211,255,0.9)');
-  ctx.strokeStyle = g;
+  const grad = ctx.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0, 'rgba(110,140,255,0.95)');
+  grad.addColorStop(1, 'rgba(126,211,255,0.95)');
+  ctx.strokeStyle = grad;
   ctx.beginPath();
   values.forEach((v,i)=>{
-    const x = pad + (i/(values.length-1))*(w-2*pad || 0);
-    const y = h - pad - ((v - min) / (max - min || 1))*(h - 2*pad);
+    const x = pad + (i/(values.length-1))*(w-2*pad||0);
+    const y = h - pad - ((v - min)/(max - min || 1))*(h-2*pad);
     if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   });
   ctx.stroke();
-  // fill under curve
-  ctx.lineTo(w-pad, h-pad);
-  ctx.lineTo(pad, h-pad);
-  ctx.closePath();
-  const gradFill = ctx.createLinearGradient(0,0,0,h);
-  gradFill.addColorStop(0, 'rgba(110,140,255,0.12)');
-  gradFill.addColorStop(1, 'rgba(110,140,255,0.02)');
-  ctx.fillStyle = gradFill;
-  ctx.fill();
+  ctx.lineTo(w-pad,h-pad); ctx.lineTo(pad,h-pad); ctx.closePath();
+  const fill = ctx.createLinearGradient(0,0,0,h);
+  fill.addColorStop(0, 'rgba(110,140,255,0.12)'); fill.addColorStop(1,'rgba(110,140,255,0.02)');
+  ctx.fillStyle = fill; ctx.fill();
 }
 
-// ---------- show / update dashboard ----------
-async function showDashboard(user){
-  if (!user) return showAuth();
-  if (el('auth')) el('auth').style.display = 'none';
-  if (el('dashboard')) el('dashboard').style.display = 'block';
-  if (el('user-chip')) el('user-chip').style.display = 'flex';
-  if (el('logout-btn')) el('logout-btn').style.display = 'inline-block';
-  if (el('user-name')) el('user-name').innerText = user.name || user.email;
-  if (el('acct-name-right')) el('acct-name-right').innerText = user.name || user.email;
-  if (el('acct-email-right')) el('acct-email-right').innerText = user.email || '';
-  if (el('acct-email')) el('acct-email').innerText = user.email || 'not signed in';
-  animateBalanceElm(user.balance || 0);
-  loadTransactionsForCurrentUser().catch(console.warn);
-  saveUser(user);
+// ---------- UI population helpers ----------
+function populateVendorsIfEmpty(){
+  const ul = el('vendor-list');
+  if (!ul) return;
+  if (ul.children.length) return;
+  const vendors = [
+    {name:'Electricity Co.', note:'Due 20 Nov'},
+    {name:'Water Supply', note:'Auto-pay available'},
+    {name:'Mobile Carrier', note:'₹ 249 / month'},
+    {name:'Internet Provider', note:'Next bill 02 Dec'}
+  ];
+  ul.innerHTML = vendors.map(v=>`<li><div>${v.name}</div><div class="muted small">${v.note}</div></li>`).join('');
 }
 
-// ---------- Auth handlers ----------
-async function loginHandler(e){
-  if (e && e.preventDefault) e.preventDefault();
-  const email = (el('login-email') && el('login-email').value.trim().toLowerCase()) || '';
-  const password = (el('login-password') && el('login-password').value) || '';
-  if (!email || !password){ if (el('login-msg')) el('login-msg').innerText = 'Enter email & password'; return; }
-  try {
-    const data = await safeFetch('/api/login', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password })
-    });
-    if (data && data.user){
-      saveUser(data.user);
-      showDashboard(data.user);
-      if (el('login-msg')) el('login-msg').innerText = '';
-      loadProfilePic();
-    } else {
-      if (el('login-msg')) el('login-msg').innerText = 'Login failed';
-    }
-  } catch(err){
-    if (el('login-msg')) el('login-msg').innerText = err.message || 'Login error';
-  }
+function populateActivityIfEmpty(){
+  const feed = el('activity-feed');
+  if (!feed) return;
+  if (feed.children.length) return;
+  const items = [
+    {t:'Paid Electricity', a:'₹ 1,200', time:'2 days ago'},
+    {t:'Sent money to shop@upi', a:'₹ 450', time:'3 days ago'},
+    {t:'Recharge mobile', a:'₹ 199', time:'5 days ago'}
+  ];
+  feed.innerHTML = items.map(i=>{
+    return `<div class="tx-item"><div style="display:flex;justify-content:space-between"><div><strong>${i.t}</strong><div class="muted small">${i.time}</div></div><div style="text-align:right"><div style="font-weight:700">${i.a}</div></div></div></div>`;
+  }).join('');
 }
 
-async function registerHandler(e){
-  if (e && e.preventDefault) e.preventDefault();
-  const name = (el('reg-name') && el('reg-name').value) || '';
-  const email = (el('reg-email') && el('reg-email').value.trim().toLowerCase()) || '';
-  const phone = (el('reg-phone') && el('reg-phone').value) || '';
-  const password = (el('reg-password') && el('reg-password').value) || '';
-  if (!email || !password) { if (el('reg-msg')) el('reg-msg').innerText = 'Enter email & password'; return; }
-  try {
-    const data = await safeFetch('/api/register', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, email, phone, password })
-    });
-    if (el('reg-msg')) el('reg-msg').innerText = data?.message || 'Registered';
-    if (data && data.user) { saveUser(data.user); showDashboard(data.user); loadProfilePic(); }
-  } catch(err){
-    if (el('reg-msg')) el('reg-msg').innerText = err.message || 'Register error';
-  }
+function populateNotificationsIfEmpty(){
+  const n = el('notifications');
+  if (!n) return;
+  if (n.dataset.loaded) return;
+  n.innerHTML = `<div class="muted small">No critical notifications. Tip: upload a profile picture for personalization.</div>`;
+  n.dataset.loaded = '1';
 }
 
-// ---------- Logout ----------
-function logout(){
-  safeFetch('/api/logout', { method:'POST' }).catch(()=>{});
-  sessionStorage.removeItem('user'); localStorage.removeItem('rupayana_user');
-  renderApp();
-}
-window.logout = logout;
-
-// ---------- Profile update ----------
-async function updateProfileHandler(){
-  const user = getUser();
-  if (!user) return alert('Please login');
-  const name = (el('profile-name') && el('profile-name').value) || user.name || '';
-  const phone = (el('profile-phone') && el('profile-phone').value) || user.phone || '';
-  try {
-    const res = await safeFetch('/api/update-profile', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name, phone })
-    });
-    if (res && res.user) { saveUser(res.user); showDashboard(res.user); }
-    alert(res?.message || 'Profile saved');
-  } catch(err){ alert(err.message || 'Profile save error'); }
-}
-
-// ---------- Bill / Transfer ----------
-async function billPayHandler(){
-  const user = getUser(); if (!user) return alert('Login first');
-  const biller = (el('biller') && el('biller').value) || '';
-  const amount = (el('bamount') && el('bamount').value) || '';
-  if (!biller || !amount) return alert('Enter biller & amount');
-  try {
-    const res = await safeFetch('/api/billpay', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, biller, amount })
-    });
-    alert(res?.message || 'Bill paid');
-    loadTransactionsForCurrentUser();
-  } catch(err){ alert(err.message || 'Bill pay failed'); }
-}
-
-async function transferHandler(){
-  const user = getUser(); if (!user) return alert('Login first');
-  const toEmail = (el('to-email') && el('to-email').value.trim().toLowerCase()) || '';
-  const amount = (el('tamount') && el('tamount').value) || '';
-  if (!toEmail || !amount) return alert('Enter recipient & amount');
-  try {
-    const res = await safeFetch('/api/transfer', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromEmail: user.email, toEmail, amount })
-    });
-    alert(res?.message || 'Transfer complete');
-    loadTransactionsForCurrentUser();
-  } catch(err){ alert(err.message || 'Transfer failed'); }
-}
-
-// ---------- Transactions ----------
+// ---------- transactions loading & stats ----------
 async function loadTransactionsForCurrentUser(){
   const user = getUser();
   const listContainer = el('tx-list');
-  if (!user) {
+  if (!user){
     if (listContainer) listContainer.innerHTML = '<div class="muted">Please login to view transactions</div>';
+    // also draw empty chart and populate sample feed
+    drawChart([]);
+    populateActivityIfEmpty();
+    populateVendorsIfEmpty();
+    populateNotificationsIfEmpty();
     return;
   }
   try {
     const res = await safeFetch(`/api/transactions?email=${encodeURIComponent(user.email)}`);
     const list = (res && res.transactions) ? res.transactions : [];
+    // render list in panel (if panel present)
     if (listContainer) {
       if (!list.length) listContainer.innerHTML = '<div class="muted">No transactions</div>';
-      else {
-        listContainer.innerHTML = list.map(t => {
-          const ts = t.created_at ? new Date(Number(t.created_at) * (String(t.created_at).length > 10 ? 1 : 1000)).toLocaleString() : '';
-          return `<div class="tx-item" style="display:flex;justify-content:space-between;padding:10px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.01)">
-            <div><strong>${t.type}</strong><div class="muted small">${t.details || t.to_email || ''}</div></div>
-            <div style="text-align:right"><div style="font-weight:700">₹ ${t.amount}</div><div class="muted small">${ts}</div></div>
-          </div>`;
-        }).join('');
-      }
+      else listContainer.innerHTML = list.map(t=>{
+        const ts = t.created_at ? new Date(Number(t.created_at) * (String(t.created_at).length>10?1:1000)).toLocaleString() : '';
+        return `<div class="tx-item"><div style="display:flex;justify-content:space-between"><div><strong>${t.type}</strong><div class="muted small">${t.details || t.to_email || ''}</div></div><div style="text-align:right"><div style="font-weight:700">₹ ${t.amount}</div><div class="muted small">${ts}</div></div></div></div>`;
+      }).join('');
     }
-    // update stats and chart
-    const amounts = list.slice(0, 12).map(x => Number(x.amount) || 0).reverse();
-    const txCount = list.length;
-    if (el('stat-tx')) el('stat-tx').innerText = txCount;
-    if (el('stat-recent')) el('stat-recent').innerText = list[0] ? list[0].details || list[0].to_email || '—' : '—';
+    // stats & chart
+    const amounts = list.slice(0,12).map(x=>Number(x.amount)||0).reverse();
+    if (el('stat-tx')) el('stat-tx').innerText = list.length;
+    if (el('stat-recent')) el('stat-recent').innerText = list[0] ? (list[0].details || list[0].to_email || '—') : '—';
     drawChart(amounts);
-  } catch(err){ if (listContainer) listContainer.innerHTML = `<div class="muted">Error: ${err.message}</div>`; }
+  } catch(err){
+    if (listContainer) listContainer.innerHTML = `<div class="muted">Error: ${err.message}</div>`;
+    drawChart([]);
+  }
 }
 
-// ---------- Panels (dynamic) ----------
+// ---------- panels (transfer, bill, profile, tx) ----------
 function setPanel(html){ if (el('panel-body')) el('panel-body').innerHTML = html; }
 
 function showTransfer(){
@@ -300,7 +204,17 @@ function showTransfer(){
     <label>Amount</label><input id="tamount" class="input" placeholder="Amount">
     <div style="margin-top:10px" class="row gap"><button id="do-transfer" class="btn-primary">Send</button> <button class="btn-ghost" onclick="renderApp()">Cancel</button></div>
   `);
-  const btn = el('do-transfer'); if (btn) btn.addEventListener('click', transferHandler);
+  const btn = el('do-transfer'); if (btn) btn.addEventListener('click', async ()=>{
+    // re-use transfer handler logic to keep endpoints unchanged
+    const user = getUser(); if (!user) return alert('Login first');
+    const toEmail = (el('to-email') && el('to-email').value.trim().toLowerCase()) || '';
+    const amount = (el('tamount') && el('tamount').value) || '';
+    if (!toEmail || !amount) return alert('Enter recipient & amount');
+    try {
+      const r = await safeFetch('/api/transfer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromEmail: user.email, toEmail, amount })});
+      alert(r?.message || 'Transfer complete'); loadTransactionsForCurrentUser();
+    } catch(e){ alert(e.message || 'Transfer failed'); }
+  });
 }
 
 function showBill(){
@@ -310,18 +224,36 @@ function showBill(){
     <label>Amount</label><input id="bamount" class="input" placeholder="Amount">
     <div style="margin-top:10px" class="row gap"><button id="do-bill" class="btn-primary">Pay</button> <button class="btn-ghost" onclick="renderApp()">Cancel</button></div>
   `);
-  const btn = el('do-bill'); if (btn) btn.addEventListener('click', billPayHandler);
+  const btn = el('do-bill'); if (btn) btn.addEventListener('click', async ()=>{
+    const user = getUser(); if (!user) return alert('Login first');
+    const biller = (el('biller') && el('biller').value) || '';
+    const amount = (el('bamount') && el('bamount').value) || '';
+    if (!biller || !amount) return alert('Enter biller & amount');
+    try {
+      const r = await safeFetch('/api/billpay', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:user.email, biller, amount })});
+      alert(r?.message || 'Bill paid'); loadTransactionsForCurrentUser();
+    } catch(e){ alert(e.message || 'Bill failed'); }
+  });
 }
 
 function showProfile(){
   const user = getUser() || { name:'', phone:'' };
   setPanel(`
     <h4>Profile</h4>
-    <label>Name</label><input id="profile-name" class="input" value="${user.name || ''}">
-    <label>Phone</label><input id="profile-phone" class="input" value="${user.phone || ''}">
+    <label>Name</label><input id="profile-name" class="input" value="${user.name||''}">
+    <label>Phone</label><input id="profile-phone" class="input" value="${user.phone||''}">
     <div style="margin-top:10px" class="row gap"><button id="profile-save" class="btn-primary">Save</button> <button class="btn-ghost" onclick="renderApp()">Cancel</button></div>
   `);
-  const btn = el('profile-save'); if (btn) btn.addEventListener('click', updateProfileHandler);
+  const btn = el('profile-save'); if (btn) btn.addEventListener('click', async ()=>{
+    const user = getUser(); if (!user) return alert('Login first');
+    const name = (el('profile-name') && el('profile-name').value) || '';
+    const phone = (el('profile-phone') && el('profile-phone').value) || '';
+    try {
+      const res = await safeFetch('/api/update-profile', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name, phone })});
+      if (res?.user) { saveUser(res.user); showDashboard(res.user); }
+      alert(res?.message || 'Profile updated');
+    } catch(e){ alert(e.message || 'Profile update failed'); }
+  });
 }
 
 function showTx(){
@@ -329,42 +261,106 @@ function showTx(){
   loadTransactionsForCurrentUser();
 }
 
-// ---------- sidebar collapse ----------
-function toggleSidebar(){
-  const sb = el('sidebar');
-  if (!sb) return;
-  sb.classList.toggle('collapsed');
-}
-function attachSidebarToggle(){
-  const t = el('sidebar-toggle');
-  if (t) t.addEventListener('click', toggleSidebar);
+// ---------- auth: login/register/logout ----------
+async function loginHandler(e){
+  if (e && e.preventDefault) e.preventDefault();
+  const email = (el('login-email') && el('login-email').value.trim().toLowerCase()) || '';
+  const password = (el('login-password') && el('login-password').value) || '';
+  if (!email || !password){ if (el('login-msg')) el('login-msg').innerText = 'Enter email & password'; return; }
+  try {
+    const data = await safeFetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password })});
+    if (data && data.user){ saveUser(data.user); showDashboard(data.user); loadProfilePic(); }
+    else { if (el('login-msg')) el('login-msg').innerText = 'Login failed'; }
+  } catch(err){ if (el('login-msg')) el('login-msg').innerText = err.message || 'Login error'; }
 }
 
-// ---------- profile picture UI wiring ----------
+async function registerHandler(e){
+  if (e && e.preventDefault) e.preventDefault();
+  const name = (el('reg-name') && el('reg-name').value) || '';
+  const email = (el('reg-email') && el('reg-email').value.trim().toLowerCase()) || '';
+  const phone = (el('reg-phone') && el('reg-phone').value) || '';
+  const password = (el('reg-password') && el('reg-password').value) || '';
+  if (!email || !password){ if (el('reg-msg')) el('reg-msg').innerText = 'Enter email & password'; return; }
+  try {
+    const data = await safeFetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, email, phone, password })});
+    if (el('reg-msg')) el('reg-msg').innerText = data?.message || 'Registered';
+    if (data && data.user){ saveUser(data.user); showDashboard(data.user); loadProfilePic(); }
+  } catch(err){ if (el('reg-msg')) el('reg-msg').innerText = err.message || 'Register error'; }
+}
+
+function logout(){
+  safeFetch('/api/logout', { method:'POST' }).catch(()=>{});
+  sessionStorage.removeItem('user'); localStorage.removeItem('rupayana_user');
+  renderApp();
+}
+window.logout = logout;
+
+// ---------- sidebar toggle & profile pic wiring ----------
+function toggleSidebar(){ const sb = el('sidebar'); if (!sb) return; sb.classList.toggle('collapsed'); }
+function attachSidebarToggle(){ const t = el('sidebar-toggle'); if (t) t.addEventListener('click', toggleSidebar); }
 function attachProfilePicUI(){
   const fileInput = el('profile-pic-input');
   const changeBtn = el('btn-change-pic');
   if (changeBtn) changeBtn.addEventListener('click', ()=> fileInput && fileInput.click());
-  if (fileInput){
-    fileInput.addEventListener('change', (ev)=>{
-      const f = ev.target.files && ev.target.files[0];
-      if (f) handleProfilePicFile(f);
-    });
-  }
-  loadProfilePic();
+  if (fileInput) fileInput.addEventListener('change', (ev)=> { const f = ev.target.files && ev.target.files[0]; if (f) handleProfilePicFile(f); });
 }
 
-// ---------- render app based on session ----------
+// ---------- show dashboard ----------
+async function showDashboard(user){
+  if (!user) return renderApp();
+  if (el('auth')) el('auth').style.display = 'none';
+  if (el('dashboard')) el('dashboard').style.display = 'block';
+  if (el('user-chip')) el('user-chip').style.display = 'flex';
+  if (el('logout-btn')) el('logout-btn').style.display = 'inline-block';
+  if (el('user-name')) el('user-name').innerText = user.name || user.email;
+  if (el('acct-name-right')) el('acct-name-right').innerText = user.name || user.email;
+  if (el('acct-email-right')) el('acct-email-right').innerText = user.email || '';
+  if (el('acct-email')) el('acct-email').innerText = user.email || 'not signed in';
+  if (el('balance')) animateBalanceElm(user.balance || 0);
+  await loadTransactionsForCurrentUser();
+  loadProfilePic();
+  populateActivityIfEmpty();
+  populateVendorsIfEmpty();
+  populateNotificationsIfEmpty();
+}
+
+function animateBalanceElm(amount){
+  const elb = el('balance');
+  if (!elb) return;
+  const start = Number(elb.dataset.current || 0);
+  const end = Number(amount || 0);
+  elb.dataset.current = end;
+  const dur = 700; const t0 = performance.now();
+  function step(now){
+    const t = Math.min(1,(now-t0)/dur); const eased = (--t)*t*t+1;
+    const val = Math.round(start + (end - start)*eased);
+    elb.innerText = '₹ ' + val.toLocaleString();
+    if (now - t0 < dur) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ---------- render app ----------
 function renderApp(){
   restoreUser();
   const user = getUser();
   if (user) showDashboard(user);
-  else showAuth();
+  else {
+    if (el('auth')) el('auth').style.display = 'block';
+    if (el('dashboard')) el('dashboard').style.display = 'none';
+    if (el('user-chip')) el('user-chip').style.display = 'none';
+    if (el('logout-btn')) el('logout-btn').style.display = 'none';
+    // default content fill
+    populateActivityIfEmpty();
+    populateVendorsIfEmpty();
+    populateNotificationsIfEmpty();
+    drawChart([]);
+    loadProfilePic();
+  }
 }
 
-// ---------- wiring DOM after load ----------
+// ---------- DOM wiring ----------
 document.addEventListener('DOMContentLoaded', function(){
-  // attach handlers
   attachSidebarToggle();
   attachProfilePicUI();
 
@@ -372,36 +368,29 @@ document.addEventListener('DOMContentLoaded', function(){
   const registerBtn = el('btn-register'); if (registerBtn) registerBtn.addEventListener('click', registerHandler);
   const logoutBtn = el('logout-btn'); if (logoutBtn) logoutBtn.addEventListener('click', logout);
 
-  // quick action buttons
-  const qt = el('quick-transfer'); if (qt) qt.addEventListener('click', ()=>{ showTransfer(); document.querySelectorAll('.menu-btn').forEach(b=>b.classList.remove('active')); });
+  const qt = el('quick-transfer'); if (qt) qt.addEventListener('click', ()=>{ showTransfer(); });
   const qb = el('quick-bill'); if (qb) qb.addEventListener('click', ()=>{ showBill(); });
   const qh = el('quick-history'); if (qh) qh.addEventListener('click', ()=>{ showTx(); });
 
-  // menu buttons: preserve data-index usage
   document.querySelectorAll('.menu-btn').forEach(b=>{
     b.addEventListener('click', ()=>{
       document.querySelectorAll('.menu-btn').forEach(x=>x.classList.remove('active'));
       b.classList.add('active');
-      const id = b.id;
-      if (id === 'menu-overview') renderApp();
-      if (id === 'menu-transfer') showTransfer();
-      if (id === 'menu-bill') showBill();
-      if (id === 'menu-history') showTx();
-      if (id === 'menu-profile') showProfile();
+      if (b.id === 'menu-overview') renderApp();
+      if (b.id === 'menu-transfer') showTransfer();
+      if (b.id === 'menu-bill') showBill();
+      if (b.id === 'menu-history') showTx();
+      if (b.id === 'menu-profile') showProfile();
     });
   });
 
-  // toggles inside auth (back-to-login)
-  const sReg = el('show-register'); if (sReg) sReg.addEventListener('click', ()=>{ el('reg-email') && el('reg-email').focus(); });
-  const sLogin = el('show-login'); if (sLogin) sLogin.addEventListener('click', ()=>{ el('login-email') && el('login-email').focus(); });
+  const sReg = el('show-register'); if (sReg) sReg.addEventListener('click', ()=> el('reg-email') && el('reg-email').focus());
+  const sLogin = el('show-login'); if (sLogin) sLogin.addEventListener('click', ()=> el('login-email') && el('login-email').focus());
 
-  // profile picture load
-  loadProfilePic();
-
-  // spinner element exists in DOM; ensure hidden
+  // ensure spinner is hidden
   showSpinner(false);
 
-  // initial render
+  // initial app render
   renderApp();
 });
 

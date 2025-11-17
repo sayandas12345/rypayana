@@ -4,10 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Rupayana — Animated Modern</title>
-
-  <!-- inline favicon to avoid 404 -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white'%3ER%3C/text%3E%3C/svg%3E">
-
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -21,7 +18,6 @@
             <div class="brand-sub muted">Secure • Fast</div>
           </div>
         </div>
-
         <button id="sidebar-toggle" class="sidebar-toggle" title="Collapse sidebar">☰</button>
       </div>
 
@@ -34,12 +30,19 @@
       </nav>
 
       <div class="account-tile">
+        <!-- default avatar will be set by app.js (either upload or generated SVG) -->
         <img id="sidebar-avatar" alt="avatar" class="avatar-img" src="">
         <div class="account-info">
           <div id="acct-email" class="acct-email">not signed in</div>
           <div class="small muted">Your account</div>
         </div>
       </div>
+
+      <div class="promo-card card small-card" id="promo">
+        <div class="promo-title">Upgrade for Analytics</div>
+        <div class="muted small">Get charts, export CSV, and persistent DB options.</div>
+      </div>
+
     </aside>
 
     <main class="main">
@@ -119,6 +122,15 @@
               <div class="muted small">Use actions to open forms (transfer, bill, profile, transactions).</div>
             </div>
           </div>
+
+          <!-- Activity feed (fills page) -->
+          <div class="card" id="activity-card">
+            <h4>Activity feed</h4>
+            <div id="activity-feed" class="activity-feed">
+              <!-- populated by JS with sample entries if empty -->
+            </div>
+          </div>
+
         </div>
 
         <aside class="col-right">
@@ -138,6 +150,18 @@
           </div>
 
           <div class="card">
+            <h4>Notifications</h4>
+            <div id="notifications" class="muted small">You have no new notifications.</div>
+          </div>
+
+          <div class="card">
+            <h4>Vendors</h4>
+            <ul id="vendor-list" class="vendor-list">
+              <!-- JS will fill with sample vendors if none -->
+            </ul>
+          </div>
+
+          <div class="card">
             <h4>Shortcuts</h4>
             <div class="row stacked">
               <button onclick="showTransfer()" class="btn-primary full">Send money</button>
@@ -146,10 +170,6 @@
             </div>
           </div>
 
-          <div class="card">
-            <h4>Info</h4>
-            <div class="muted small">This is a frontend-enhanced demo. Data is persisted locally unless your backend handles requests.</div>
-          </div>
         </aside>
       </section>
 

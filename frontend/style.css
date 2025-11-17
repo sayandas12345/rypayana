@@ -10,7 +10,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#041124);color:#e6eef8;-webkit-font-smoothing:antialiased}
-.app-wrap{display:flex;gap:18px;min-height:100vh}
+.app-wrap{display:flex;gap:18px;min-height:100vh;padding:18px}
 
 /* sidebar */
 .sidebar{width:260px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 12px 40px rgba(2,6,23,0.6);border-radius:14px;position:relative;transition:width .28s ease,transform .28s ease}
@@ -32,8 +32,11 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:line
 .account-tile{display:flex;align-items:center;gap:12px;margin-top:18px}
 .avatar-img{width:56px;height:56;border-radius:10px;background:linear-gradient(135deg,#7ed3ff,#6e8cff);object-fit:cover}
 
+/* promo mini-card */
+.promo-card{margin-top:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px}
+
 /* main layout */
-.main{flex:1;padding:24px}
+.main{flex:1;padding:6px 10px}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .search{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);width:420px}
 .top-actions{display:flex;align-items:center;gap:10px}
@@ -69,6 +72,14 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:line
 .actions.small-gap{display:flex;gap:8px;margin-top:12px}
 .panel-body{margin-top:12px;padding:12px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
 
+/* activity */
+.activity-feed{display:flex;flex-direction:column;gap:10px}
+.tx-item{background:rgba(255,255,255,0.01);padding:10px;border-radius:8px}
+
+/* lists */
+.vendor-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.vendor-list li{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);display:flex;justify-content:space-between;align-items:center}
+
 /* avatars */
 .avatar-sm{width:30px;height:30px;border-radius:8px;object-fit:cover}
 .avatar-lg{width:72px;height:72;border-radius:10px;object-fit:cover}
@@ -84,7 +95,7 @@ html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:line
 
 /* responsive */
 @media (max-width:960px){
-  .app-wrap{flex-direction:column}
+  .app-wrap{flex-direction:column;padding:12px}
   .sidebar{width:100%;display:flex;order:2}
   .grid{grid-template-columns:1fr}
   .search{width:100%}
