@@ -3,110 +3,173 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Rupayana - Demo</title>
+  <title>Rupayana — Animated Modern</title>
 
-  <!-- Inline favicon to stop 404 for /favicon.ico -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white' font-family='Arial'%3ER%3C/text%3E%3C/svg%3E">
+  <!-- inline favicon to avoid 404 -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232563eb'/%3E%3Ctext x='50' y='65' font-size='60' text-anchor='middle' fill='white'%3ER%3C/text%3E%3C/svg%3E">
 
-  <!-- main stylesheet -->
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="app-wrap">
-    <header class="topbar">
-      <div class="brand">Rupayana</div>
-      <div id="user-area" class="user-area">
-        <span id="user-name" class="top-user"></span>
-        <button id="logout-btn" class="btn-ghost" style="display:none">Logout</button>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">
+          <div class="logo" id="logo">R</div>
+          <div class="brand-text">
+            <div class="brand-title">Rupayana</div>
+            <div class="brand-sub muted">Secure • Fast</div>
+          </div>
+        </div>
+
+        <button id="sidebar-toggle" class="sidebar-toggle" title="Collapse sidebar">☰</button>
       </div>
-    </header>
 
-    <main class="main-grid">
-      <!-- left column: auth + dashboard -->
-      <section class="col-left">
-        <!-- AUTH -->
-        <div id="auth" class="card auth-card">
-          <h2 class="card-title">Login</h2>
-          <div class="form-row">
-            <input id="login-email" placeholder="Email" class="input"/>
-            <input id="login-password" placeholder="Password" type="password" class="input"/>
-            <div id="login-msg" class="muted small"></div>
-            <div class="row gap">
-              <button id="btn-login" class="btn-primary">Login</button>
-              <button id="show-register" class="btn-ghost">Register</button>
+      <nav class="menu" id="menu">
+        <button id="menu-overview" class="menu-btn active" data-index="0">Overview</button>
+        <button id="menu-transfer" class="menu-btn" data-index="1">Transfer</button>
+        <button id="menu-bill" class="menu-btn" data-index="2">Bill Pay</button>
+        <button id="menu-history" class="menu-btn" data-index="3">History</button>
+        <button id="menu-profile" class="menu-btn" data-index="4">Profile</button>
+      </nav>
+
+      <div class="account-tile">
+        <img id="sidebar-avatar" alt="avatar" class="avatar-img" src="">
+        <div class="account-info">
+          <div id="acct-email" class="acct-email">not signed in</div>
+          <div class="small muted">Your account</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <input class="search" placeholder="Search transactions, vendors, UPI id..." id="search-input">
+        <div class="top-actions">
+          <div class="user-chip" id="user-chip" style="display:none">
+            <img id="user-avatar" class="avatar-sm" src="" alt="u"/>
+            <span id="user-name">User</span>
+          </div>
+          <button id="logout-btn" class="btn-ghost" style="display:none">Logout</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="col-left">
+          <!-- AUTH -->
+          <div id="auth" class="card auth-card">
+            <h3>Login</h3>
+            <div class="form">
+              <input id="login-email" class="input" placeholder="Email">
+              <input id="login-password" class="input" placeholder="Password" type="password">
+              <div id="login-msg" class="muted small"></div>
+              <div class="row gap">
+                <button id="btn-login" class="btn-primary">Login</button>
+                <button id="show-register" class="btn-ghost">Register</button>
+              </div>
+            </div>
+
+            <hr class="sep">
+
+            <h3>Register</h3>
+            <div class="form">
+              <input id="reg-name" class="input" placeholder="Full name">
+              <input id="reg-email" class="input" placeholder="Email">
+              <input id="reg-phone" class="input" placeholder="Phone">
+              <input id="reg-password" class="input" placeholder="Password" type="password">
+              <div id="reg-msg" class="muted small"></div>
+              <div class="row gap">
+                <button id="btn-register" class="btn-primary">Create account</button>
+                <button id="show-login" class="btn-ghost">Back to login</button>
+              </div>
             </div>
           </div>
 
-          <hr class="sep">
+          <!-- Dashboard -->
+          <div id="dashboard" class="card dashboard-card" style="display:none">
+            <div class="dash-head">
+              <div>
+                <div class="muted small">Wallet balance</div>
+                <div class="balance" id="balance">₹ 0</div>
+              </div>
+              <div class="dash-stats">
+                <div class="stat">
+                  <div class="muted small">Tx</div>
+                  <div id="stat-tx" class="stat-value">0</div>
+                </div>
+                <div class="stat">
+                  <div class="muted small">Recent</div>
+                  <div id="stat-recent" class="stat-value">—</div>
+                </div>
+              </div>
+            </div>
 
-          <h2 class="card-title">Register</h2>
-          <div class="form-row">
-            <input id="reg-name" placeholder="Full name" class="input"/>
-            <input id="reg-email" placeholder="Email" class="input"/>
-            <input id="reg-phone" placeholder="Phone" class="input"/>
-            <input id="reg-password" placeholder="Password" type="password" class="input"/>
-            <div id="reg-msg" class="muted small"></div>
-            <div class="row gap">
-              <button id="btn-register" class="btn-primary">Register</button>
-              <button id="show-login" class="btn-ghost">Back to login</button>
+            <div class="chart-wrap">
+              <canvas id="balance-chart" height="100"></canvas>
+            </div>
+
+            <div class="actions small-gap">
+              <button id="quick-transfer" class="btn-ghost">UPI Transfer</button>
+              <button id="quick-bill" class="btn-ghost">Bill Pay</button>
+              <button id="quick-history" class="btn-ghost">History</button>
+              <button id="quick-profile" class="btn-ghost">Profile</button>
+            </div>
+
+            <div id="panel-body" class="panel-body">
+              <div class="muted small">Use actions to open forms (transfer, bill, profile, transactions).</div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="col-right">
+          <div class="card">
+            <h4>Account</h4>
+            <div class="row gap" style="align-items:center">
+              <img id="profile-pic-display" class="avatar-lg" src="" alt="profile">
+              <div>
+                <div id="acct-name-right" class="muted">Not signed in</div>
+                <div id="acct-email-right" class="small muted">—</div>
+                <div style="margin-top:8px">
+                  <input id="profile-pic-input" type="file" accept="image/*" style="display:none">
+                  <button id="btn-change-pic" class="btn-ghost">Change picture</button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="small muted note">Tip: Demo saves data locally and also works with your backend when it is available.</div>
-        </div>
-
-        <!-- DASHBOARD -->
-        <div id="dashboard" class="card dashboard-card" style="display:none">
-          <h2 class="card-title">Dashboard</h2>
-          <div class="info-row">
-            <div>Welcome, <strong id="user-name-display"></strong></div>
-            <div class="muted small">Email: <span id="acct-email"></span></div>
-            <div class="muted small">Balance: <span id="balance">0</span></div>
+          <div class="card">
+            <h4>Shortcuts</h4>
+            <div class="row stacked">
+              <button onclick="showTransfer()" class="btn-primary full">Send money</button>
+              <button onclick="showBill()" class="btn-ghost full">Pay bill</button>
+              <button onclick="showTx()" class="btn-ghost full">Transactions</button>
+            </div>
           </div>
 
-          <hr class="sep">
-
-          <div id="panel-body" class="panel-body">
-            <p class="muted">Use the buttons below to view transfer / bill / profile / transactions UI.</p>
+          <div class="card">
+            <h4>Info</h4>
+            <div class="muted small">This is a frontend-enhanced demo. Data is persisted locally unless your backend handles requests.</div>
           </div>
-
-          <div class="row actions">
-            <button onclick="showTx()" class="btn-ghost">Transactions</button>
-            <button onclick="showTransfer()" class="btn-ghost">Transfer</button>
-            <button onclick="showBill()" class="btn-ghost">Bill Pay</button>
-            <button onclick="showProfile()" class="btn-ghost">Profile</button>
-          </div>
-        </div>
+        </aside>
       </section>
 
-      <!-- right column: quick info / activity -->
-      <aside class="col-right">
-        <div class="card small-card">
-          <h3 class="card-title">Quick Info</h3>
-          <div class="muted small">Logged in user details will appear here. Use actions to interact with your account.</div>
-        </div>
-
-        <div class="card small-card" style="margin-top:12px">
-          <h3 class="card-title">Shortcuts</h3>
-          <div class="row stacked">
-            <button onclick="showTransfer()" class="btn-primary full">Send money</button>
-            <button onclick="showBill()" class="btn-ghost full">Pay bill</button>
-            <button onclick="showTx()" class="btn-ghost full">History</button>
-          </div>
-        </div>
-      </aside>
+      <footer class="footer muted small">Rupayana — Demo UI • Animations • Charts</footer>
     </main>
 
-    <footer class="footer muted small">Rupayana • Demo UI — preserves original element IDs & endpoints</footer>
+    <!-- global spinner -->
+    <div id="global-spinner" class="spinner-overlay" aria-hidden="true">
+      <div class="spinner"></div>
+    </div>
   </div>
 
-  <!-- Keep your backend URL here (unchanged) -->
-  <script>window.API = "https://rupayana.onrender.com";</script>
+  <!-- keep API base accessible to override if needed -->
+  <script>window.API = window.API || "https://rupayana.onrender.com";</script>
 
-  <!-- app script (same IDs & endpoints) -->
+  <!-- app script -->
   <script src="/app.js"></script>
 </body>
 </html>
+
 
 
 
