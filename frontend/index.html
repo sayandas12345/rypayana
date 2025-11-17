@@ -2,211 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rupayana — Professional UI</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Rupayana - Demo</title>
   <style>
-    :root{
-      --bg:#0f1724; /* deep slate */
-      --surface:#0b1220; /* card surface */
-      --muted:#94a3b8;
-      --accent:#06b6d4; /* teal-ish accent */
-      --accent-2:#7c3aed; /* secondary accent */
-      --glass: rgba(255,255,255,0.02);
-      --radius:16px;
-      --shadow: 0 10px 30px rgba(2,6,23,0.6);
-    }
-
-    html,body{height:100%; margin:0; font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background: linear-gradient(180deg,#071126 0%, #07172a 60%); color:#e6eef8}
-    .app-wrap{max-width:1200px; margin:28px auto; padding:20px;}
-
-    /* Topbar */
-    .topbar{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px}
-    .brand{display:flex; gap:10px; align-items:center}
-    .brand .logo{width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow: 0 6px 18px rgba(12,17,25,0.4); font-weight:800}
-    .brand h1{font-size:18px; margin:0; letter-spacing:0.3px}
-    .top-actions{display:flex; gap:10px; align-items:center}
-    .chip{background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:8px 12px; border-radius:999px; color:var(--muted); font-weight:600}
-
-    /* Layout */
-    .layout{display:grid; grid-template-columns:340px 1fr; gap:20px}
-    .card-surface{background:var(--surface); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);}
-    .muted{color:var(--muted)}
-
-    /* Left column */
-    .balance-block{display:flex; flex-direction:column; gap:6px}
-    .balance-amount{font-size:28px; font-weight:800; color:#fff}
-    .small{font-size:0.85rem}
-
-    .quick-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px}
-    .quick-tile{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:12px; border-radius:12px; display:flex; gap:10px; align-items:center; cursor:pointer; transition:transform .14s ease, box-shadow .14s ease}
-    .quick-tile:hover{transform:translateY(-4px); box-shadow:0 12px 30px rgba(2,6,23,0.6)}
-    .qt-icon{width:44px; height:44px; border-radius:10px; display:grid; place-items:center; color:white; font-weight:700}
-    .qt-upi{background:linear-gradient(135deg,#06b6d4,#06b6d4)}
-    .qt-bank{background:linear-gradient(135deg,#7c3aed,#7c3aed)}
-    .qt-bill{background:linear-gradient(135deg,#f97316,#fb923c)}
-
-    /* Right column */
-    #panel{min-height:420px}
-    .panel-header{display:flex; justify-content:space-between; align-items:center}
-    .tx-list{display:flex; flex-direction:column; gap:10px; margin-top:12px}
-    .tx-item{display:flex; justify-content:space-between; align-items:center; padding:12px; border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));}
-
-    /* Form styles */
-    .form-label{font-weight:600; font-size:0.88rem; color:#dbeafe}
-    input.form-control, select.form-control{border-radius:10px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:#e6eef8; padding:10px}
-    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent-2)); border:0; box-shadow:0 12px 30px rgba(12,17,25,0.6);}
-    .btn-ghost{background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted)}
-
-    /* bottom bar */
-    .bottom-bar{position:fixed; left:50%; transform:translateX(-50%); bottom:18px; width:min(980px,94%); display:flex; justify-content:space-between; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:10px; border-radius:999px; box-shadow:0 8px 30px rgba(2,6,23,0.6)}
-
-    @media(max-width:980px){.layout{grid-template-columns:1fr} .bottom-bar{display:flex;}}
+    body{font-family:Arial,Helvetica,sans-serif;background:#0f172a;color:#e6eef8;padding:20px}
+    .card{background:#0b1220;padding:18px;border-radius:8px;max-width:720px;margin:10px auto}
+    input{display:block;width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #334155;background:#071028;color:#e6eef8}
+    button{padding:8px 12px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer}
+    .muted{color:#9aa6bd;font-size:13px}
+    nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
   </style>
 </head>
 <body>
-  <div class="app-wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo">R</div>
-        <div>
-          <h1>Rupayana</h1>
-          <div class="muted" style="font-size:0.85rem">Instant payments • Secure • Fast</div>
-        </div>
-      </div>
-      <div class="top-actions">
-        <div class="chip">Demo Mode</div>
-        <div style="text-align:right">
-          <div class="muted small">Signed in as</div>
-          <div id="user-name" style="font-weight:700">Guest</div>
-        </div>
-        <!-- Resume session button: calls restoreUser() from app.js if available -->
-        <div>
-          <button id="btn-resume" class="btn btn-ghost" onclick="(typeof restoreUser === 'function') ? (restoreUser(), (typeof showDashboard === 'function') && showDashboard(getUser())) : alert('No session to resume')">Resume session</button>
-        </div>
-      </div>
-    </div>
+  <div class="card">
+    <nav>
+      <div><strong>Rupayana</strong></div>
+      <div id="user-area"><span id="user-name"></span> <button id="logout-btn" style="display:none">Logout</button></div>
+    </nav>
 
-    <!-- AUTH CARD (visible when logged out) -->
-    <div id="auth" class="card-surface" style="margin-bottom:18px">
-      <div style="display:flex; gap:18px; align-items:flex-start;">
-        <div style="flex:1">
-          <h3 style="margin:0">Welcome back</h3>
-          <div class="muted small">Login to access your Rupayana wallet and quick transfers.</div>
-          <div style="margin-top:12px; display:grid; grid-template-columns:1fr 340px; gap:18px;">
-            <div>
-              <div class="card-surface" style="padding:14px;">
-                <label class="form-label">Email</label>
-                <input id="login-email" class="form-control" placeholder="you@domain.com" />
-                <label class="form-label" style="margin-top:10px">Password</label>
-                <input id="login-password" type="password" class="form-control" placeholder="••••••" />
-                <div style="margin-top:12px; display:flex; gap:10px;">
-                  <button id="btn-login" class="btn btn-primary">Sign in</button>
-                  <button class="btn btn-ghost" onclick="showForgot && showForgot()">Forgot</button>
-                  <div id="login-msg" style="align-self:center;color:#fb7185;font-weight:600"></div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div class="card-surface" style="padding:12px; text-align:center;">
-                <div style="font-weight:700">New here?</div>
-                <div class="muted small">Create an account to start transacting</div>
-                <div style="margin-top:12px; text-align:left">
-                  <label class="form-label">Full name</label>
-                  <input id="reg-name" class="form-control" placeholder="Your name" />
-                  <label class="form-label" style="margin-top:8px">Email</label>
-                  <input id="reg-email" class="form-control" placeholder="you@domain.com" />
-                  <label class="form-label" style="margin-top:8px">Phone</label>
-                  <input id="reg-phone" class="form-control" placeholder="10-digit" />
-                  <label class="form-label" style="margin-top:8px">Password</label>
-                  <input id="reg-password" type="password" class="form-control" placeholder="Create password" />
-                  <div style="margin-top:10px; display:flex; gap:8px;">
-                    <button id="btn-register" class="btn btn-primary" style="flex:1">Create Account</button>
-                    <div id="reg-msg" style="align-self:center;color:var(--muted);padding-left:8px"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div style="width:320px">
-          <div class="card-surface" style="text-align:center">
-            <div class="muted small">Quick actions</div>
-            <div style="display:flex; gap:8px; margin-top:12px; justify-content:center">
-              <button class="btn btn-ghost" onclick="showTransfer()">Transfer</button>
-              <button class="btn btn-ghost" onclick="showBill()">Bill</button>
-            </div>
-            <div style="margin-top:12px; font-weight:700">Demo accounts</div>
-            <div class="muted small">admin@rupayana.com / admin123</div>
-            <div class="muted small">user@example.com / pass123</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DASHBOARD -->
-    <div class="layout" id="dashboard" style="display:none">
+    <div id="auth" style="display:block">
+      <h3>Login</h3>
       <div>
-        <div class="card-surface">
-          <div style="display:flex; justify-content:space-between; align-items:center">
-            <div>
-              <div class="muted small">Wallet balance</div>
-              <div class="balance-amount">₹ <span id="balance">0</span></div>
-            </div>
-            <div style="text-align:right"><div class="muted small">Account</div><div id="acct-email" style="font-weight:700">guest@domain</div></div>
-          </div>
-
-          <div class="quick-grid">
-            <div class="quick-tile" onclick="showTransfer()"><div class="qt-icon qt-upi">U</div><div><div style="font-weight:700">UPI</div><div class="muted small">Fast transfers</div></div></div>
-            <div class="quick-tile" onclick="showTransfer()"><div class="qt-icon qt-bank">B</div><div><div style="font-weight:700">Bank</div><div class="muted small">NEFT/IMPS</div></div></div>
-            <div class="quick-tile" onclick="showBill()"><div class="qt-icon qt-bill">P</div><div><div style="font-weight:700">Bill Pay</div><div class="muted small">Utilities & recharge</div></div></div>
-            <div class="quick-tile" onclick="showTx()"><div class="qt-icon" style="background:linear-gradient(135deg,#06b6d4,#7c3aed)">H</div><div><div style="font-weight:700">History</div><div class="muted small">View transactions</div></div></div>
-          </div>
-        </div>
-
-        <button class="btn btn-ghost" onclick="showTx()">View all</button></div>
-          <div class="tx-list">
-            <div class="tx-item"><div>15 Nov 2025</div><div class="muted small">Electricity</div><div>₹ 1,200</div></div>
-            <div class="tx-item"><div>14 Nov 2025</div><div class="muted small">To: vendor@upi</div><div>₹ 250</div></div>
-          </div>
-        </div>
+        <input id="login-email" placeholder="Email">
+        <input id="login-password" placeholder="Password" type="password">
+        <div id="login-msg" class="muted"></div>
+        <button id="btn-login">Login</button>
       </div>
 
+      <hr style="margin:16px 0">
+
+      <h3>Register</h3>
       <div>
-        <div id="panel" class="card-surface">
-          <div class="panel-header"><div><h4 style="margin:0">Activity</h4><div class="muted small">Select an action</div></div><div></div></div>
-          <div style="margin-top:12px" id="panel-body"><p class="muted small">Use the tiles to perform actions. The panel will show forms and results.</p></div>
-        </div>
-
-        <div class="card-surface" style="margin-top:12px">
-          <div style="display:flex; justify-content:space-between; align-items:center"><div style="font-weight:700">Shortcuts</div><div class="muted small">One-click</div></div>
-          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">
-            <button class="btn btn-ghost" onclick="showTransfer()">Send</button>
-            <button class="btn btn-ghost" onclick="showBill()">Pay Bill</button>
-            <button class="btn btn-ghost" onclick="showProfile()">Account</button>
-            <div id="dashboard-buttons"></div>
-          </div>
-        </div>
+        <input id="reg-name" placeholder="Full name">
+        <input id="reg-email" placeholder="Email">
+        <input id="reg-phone" placeholder="Phone">
+        <input id="reg-password" placeholder="Password" type="password">
+        <div id="reg-msg" class="muted"></div>
+        <button id="btn-register">Register</button>
       </div>
     </div>
 
-    <div class="bottom-bar">
-      <div class="muted small">Prototype version 2025 • Bring your laptop for demo</div>
-      <div style="display:flex; gap:8px"><button class="btn btn-ghost" onclick="showProfile()">Profile</button><button class="btn btn-ghost" onclick="logout()">Logout</button></div>
-    </div>
+    <div id="dashboard" style="display:none">
+      <h3>Dashboard</h3>
+      <div>Welcome, <span id="user-name-display"></span></div>
+      <div>Email: <span id="acct-email"></span></div>
+      <div>Balance: <span id="balance">0</span></div>
 
+      <hr>
+
+      <div id="panel-body">
+        <p class="muted">Use the buttons below to view transfer/bill/profile/transactions UI.</p>
+      </div>
+
+      <div style="margin-top:12px">
+        <button onclick="showTx()">Transactions</button>
+        <button onclick="showTransfer()">Transfer</button>
+        <button onclick="showBill()">Bill Pay</button>
+        <button onclick="showProfile()">Profile</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Set API base for frontend -->
+  <!-- Set the public backend URL the frontend should use.
+       If your backend public URL is different, replace the value below with it. -->
   <script>window.API = "https://rupayana.onrender.com";</script>
 
-  <!-- load your real app.js (app.js will control all behaviour) -->
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
+
 
 
