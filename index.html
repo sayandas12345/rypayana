@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Rupayana - Demo</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#0f172a;color:#e6eef8;padding:20px}
+    .card{background:#0b1220;padding:18px;border-radius:8px;max-width:720px;margin:10px auto}
+    input{display:block;width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #334155;background:#071028;color:#e6eef8}
+    button{padding:8px 12px;border-radius:6px;border:none;background:#2563eb;color:white;cursor:pointer}
+    .muted{color:#9aa6bd;font-size:13px}
+    nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <nav>
+      <div><strong>Rupayana</strong></div>
+      <div id="user-area"><span id="user-name"></span> <button id="logout-btn" style="display:none">Logout</button></div>
+    </nav>
+
+    <div id="auth" style="display:block">
+      <h3>Login</h3>
+      <div>
+        <input id="login-email" placeholder="Email">
+        <input id="login-password" placeholder="Password" type="password">
+        <div id="login-msg" class="muted"></div>
+        <button id="btn-login">Login</button>
+      </div>
+
+      <hr style="margin:16px 0">
+
+      <h3>Register</h3>
+      <div>
+        <input id="reg-name" placeholder="Full name">
+        <input id="reg-email" placeholder="Email">
+        <input id="reg-phone" placeholder="Phone">
+        <input id="reg-password" placeholder="Password" type="password">
+        <div id="reg-msg" class="muted"></div>
+        <button id="btn-register">Register</button>
+      </div>
+    </div>
+
+    <div id="dashboard" style="display:none">
+      <h3>Dashboard</h3>
+      <div>Welcome, <span id="user-name-display"></span></div>
+      <div>Email: <span id="acct-email"></span></div>
+      <div>Balance: <span id="balance">0</span></div>
+
+      <hr>
+
+      <div id="panel-body">
+        <p class="muted">Use the buttons below to view transfer/bill/profile/transactions UI.</p>
+      </div>
+
+      <div style="margin-top:12px">
+        <button onclick="showTx()">Transactions</button>
+        <button onclick="showTransfer()">Transfer</button>
+        <button onclick="showBill()">Bill Pay</button>
+        <button onclick="showProfile()">Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Set the public backend URL the frontend should use.
+       If your backend public URL is different, replace the value below with it. -->
+  <script>window.API = "https://rupayana.onrender.com";</script>
+
+  <script src="/app.js"></script>
+</body>
+</html>
+
+
+
+
+
+

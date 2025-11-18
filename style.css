@@ -1,0 +1,6 @@
+body{font-family: Arial, sans-serif;background:#f6f7fb;color:#222}
+.container{max-width:760px;margin:30px auto;padding:20px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
+input{display:block;margin:8px 0;padding:8px;width:100%;box-sizing:border-box}
+button{padding:8px 12px;margin:6px 0}
+.msg{color:red}
+#panel{margin-top:12px;padding:10px;border-top:1px solid #eee}
