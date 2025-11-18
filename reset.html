@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"/><title>Reset password</title></head>
+<body>
+  <h2>Reset password (demo)</h2>
+  <input id="email" placeholder="email" /><input id="token" placeholder="token" />
+  <input id="newpass" placeholder="new password" />
+  <button id="btn">Reset</button>
+  <p id="msg"></p>
+  <script>
+    document.getElementById('btn').onclick = async () => {
+      const email = document.getElementById('email').value;
+      const token = document.getElementById('token').value;
+      const newPassword = document.getElementById('newpass').value;
+      const res = await fetch('/api/reset-password', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,token,newPassword})});
+      const j = await res.json();
+      document.getElementById('msg').innerText = j.error || j.message || JSON.stringify(j);
+    };
+  </script>
+</body>
+</html>
