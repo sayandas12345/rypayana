@@ -3,131 +3,84 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rupayana</title>
+  <title>Rupayana — Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="loader"><div class="spinner"></div></div>
-
-  <div class="topbar">
-    <div class="brand">
-      <div class="logo">R</div>
-      <div class="title">
-        <div class="name">Rupayana</div>
-        <div class="tag">Instant payments • Secure • Fast</div>
+  <header class="site-header">
+    <div class="left">
+      <div class="brand">
+        <div class="brand-logo">R</div>
+        <div class="brand-info">
+          <div class="brand-name">Rupayana</div>
+          <div class="brand-tag">Instant payments • Secure • Fast</div>
+        </div>
       </div>
     </div>
-    <div class="user-info">
-      <div id="user-email" class="user-email">guest</div>
+    <div class="right">
+      <div class="demo-pill">Demo Mode</div>
+      <div class="signed">Signed in as <strong id="user-name">guest</strong></div>
     </div>
-  </div>
+  </header>
 
-  <div id="container">
-    <aside id="sidebar" class="sidebar">
-      <nav>
-        <button onclick="show('dashboard-section')">Overview</button>
-        <button onclick="show('transfer-section')">Transfer</button>
-        <button onclick="show('bill-section')">Bill Pay</button>
-        <button onclick="show('history-section')">History</button>
-        <button onclick="show('profile-section')">Profile</button>
-      </nav>
-      <div class="avatar-box">
-        <div class="avatar">S</div>
-      </div>
-    </aside>
-
-    <main id="main">
-      <!-- LOGIN -->
-      <section id="login-section" class="page page-center">
-        <div class="card auth-card">
-          <h2>Login</h2>
-          <input id="log-email" placeholder="Email" type="email" />
-          <input id="log-password" placeholder="Password" type="password" />
-          <button id="log-btn">Login</button>
-          <p class="muted">No account? <span class="link" onclick="show('register-section')">Register</span></p>
-        </div>
-      </section>
-
-      <!-- REGISTER -->
-      <section id="register-section" class="page page-center">
-        <div class="card auth-card">
-          <h2>Create account</h2>
-          <input id="reg-name" placeholder="Full name" />
-          <input id="reg-email" placeholder="Email" type="email" />
-          <input id="reg-phone" placeholder="Phone" />
-          <input id="reg-password" placeholder="Password" type="password" />
-          <button id="reg-btn">Register</button>
-          <p class="muted">Already have an account? <span class="link" onclick="show('login-section')">Login</span></p>
-        </div>
-      </section>
-
-      <!-- DASHBOARD -->
-      <section id="dashboard-section" class="page">
-        <div class="card dash-card">
-          <div class="dash-top">
-            <div>
-              <div class="small">Wallet balance</div>
-              <div class="big" id="dash-balance">₹ 0</div>
-            </div>
-            <div class="acct" id="dash-email-display">Account<br><strong id="dash-email">guest</strong></div>
+  <main class="page">
+    <section class="container">
+      <div class="wallet-card card">
+        <div class="wallet-top">
+          <div class="wallet-left">
+            <div class="wallet-label">Wallet balance</div>
+            <div class="wallet-amount" id="wallet-amount">₹ 0</div>
           </div>
-
-          <div class="grid">
-            <div class="tile" onclick="show('transfer-section')">
-              <div class="tile-icon u">U</div>
-              <div><div class="tile-title">UPI</div><div class="tile-sub">Fast transfers</div></div>
-            </div>
-            <div class="tile" onclick="show('profile-section')">
-              <div class="tile-icon b">B</div>
-              <div><div class="tile-title">Bank</div><div class="tile-sub">NEFT/IMPS</div></div>
-            </div>
-            <div class="tile" onclick="show('bill-section')">
-              <div class="tile-icon p">P</div>
-              <div><div class="tile-title">Bill Pay</div><div class="tile-sub">Utilities & recharge</div></div>
-            </div>
-            <div class="tile" onclick="show('history-section')">
-              <div class="tile-icon h">H</div>
-              <div><div class="tile-title">History</div><div class="tile-sub">View transactions</div></div>
-            </div>
+          <div class="wallet-account">
+            <div class="account-title">Account</div>
+            <div id="account-email" class="account-email">guest@example.com</div>
           </div>
         </div>
 
-        <div class="card">
-          <button class="view-all">View all</button>
-          <div class="tx">15 Nov 2025 — Electricity — <strong>₹ 1,200</strong></div>
-          <div class="tx">14 Nov 2025 — To: vendor@upi — <strong>₹ 250</strong></div>
+        <div class="tiles">
+          <div class="tile" onclick="showFeature('upi')">
+            <div class="tile-icon tile-u">U</div>
+            <div class="tile-info"><div class="tile-title">UPI</div><div class="tile-sub">Fast transfers</div></div>
+          </div>
+
+          <div class="tile" onclick="showFeature('bank')">
+            <div class="tile-icon tile-b">B</div>
+            <div class="tile-info"><div class="tile-title">Bank</div><div class="tile-sub">NEFT/IMPS</div></div>
+          </div>
+
+          <div class="tile" onclick="showFeature('bill')">
+            <div class="tile-icon tile-p">P</div>
+            <div class="tile-info"><div class="tile-title">Bill Pay</div><div class="tile-sub">Utilities & recharge</div></div>
+          </div>
+
+          <div class="tile" onclick="showFeature('history')">
+            <div class="tile-icon tile-h">H</div>
+            <div class="tile-info"><div class="tile-title">History</div><div class="tile-sub">View transactions</div></div>
+          </div>
         </div>
-      </section>
+      </div>
 
-      <!-- OTHER PAGES -->
-      <section id="transfer-section" class="page">
-        <div class="card"><h3>Transfer</h3><p>Simple transfer UI</p></div>
-      </section>
+      <button class="view-all">View all</button>
 
-      <section id="bill-section" class="page">
-        <div class="card"><h3>Bill Pay</h3><p>Utilities & recharge</p></div>
-      </section>
-
-      <section id="history-section" class="page">
-        <div class="card"><h3>History</h3><p>No transactions yet</p></div>
-      </section>
-
-      <section id="profile-section" class="page">
-        <div class="card"><h3>Profile</h3>
-          <p>Name: <span id="dash-name">Guest</span></p>
-          <p>Email: <span id="dash-email">guest</span></p>
-          <p>Phone: <span id="dash-phone"></span></p>
-          <button id="logout-btn">Logout</button>
+      <div class="transactions card">
+        <div class="tx-row">
+          <div class="tx-date">15 Nov 2025</div>
+          <div class="tx-desc">Electricity</div>
+          <div class="tx-amt">₹ 1,200</div>
         </div>
-      </section>
-
-    </main>
-  </div>
+        <div class="tx-row">
+          <div class="tx-date">14 Nov 2025</div>
+          <div class="tx-desc">To: vendor@upi</div>
+          <div class="tx-amt">₹ 250</div>
+        </div>
+        <!-- placeholder more -->
+      </div>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>
 </html>
-
 
 
 
