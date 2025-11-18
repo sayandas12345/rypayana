@@ -1,34 +1,34 @@
-// server.js — CORS-safe, responds to OPTIONS, logs FRONTEND_ORIGIN
+// server.js - temporary permissive CORS to unblock frontend quickly
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-// FRONTEND ORIGIN from env (must be set in Render)
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "https://rupayana.vercel.app";
-console.log("FRONTEND_ORIGIN:", FRONTEND_ORIGIN);
+// dynamic CORS middleware (permits any origin but sends appropriate headers)
+// NOTE: This is permissive to unblock quickly — you can set FRONTEND_ORIGIN
+// to lock down later (see instructions after deploy).
+app.use((req, res, next) => {
+  const origin = req.headers.origin || "*";
+  // Allow credentials if origin present
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With");
+  // handle OPTIONS preflight
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+  next();
+});
 
-// CORS options — explicitly allow credentials & preflight
-const corsOptions = {
-  origin: FRONTEND_ORIGIN,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-};
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // respond to preflight
+// root
+app.get("/", (req, res) => res.send("Rupayana backend (CORS-unblock)"));
 
-// root route so GET / won't 404 (helps debug)
-app.get("/", (req, res) => res.send("Rupayana backend running."));
-
-// ----------------- DB (Postgres preferred, fallback SQLite) -----------------
+/* ------------------ Simple DB fallback: sqlite / postgres ------------------ */
 let usePostgres = false;
 let db = null;
 
@@ -36,7 +36,7 @@ if (process.env.DATABASE_URL) {
   usePostgres = true;
   console.log(">>> USING POSTGRES:", process.env.DATABASE_URL);
   const { Pool } = require("pg");
-  db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  db = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }});
 } else {
   console.log(">>> USING SQLITE fallback");
   const sqlite3 = require("sqlite3").verbose();
@@ -52,7 +52,6 @@ if (process.env.DATABASE_URL) {
   )`);
 }
 
-// Helpers
 function runQuery(sql, params = []) {
   return new Promise((resolve, reject) => {
     if (usePostgres) db.query(sql, params).then(r => resolve(r.rows)).catch(reject);
@@ -62,11 +61,16 @@ function runQuery(sql, params = []) {
 function runExec(sql, params = []) {
   return new Promise((resolve, reject) => {
     if (usePostgres) db.query(sql + " RETURNING *", params).then(r => resolve(r.rows[0] || null)).catch(reject);
-    else db.run(sql, params, function(err) { if (err) reject(err); else resolve({ id: this.lastID }); });
+    else db.run(sql, params, function(err) {
+      if (err) return reject(err);
+      resolve({ id: this.lastID });
+    });
   });
 }
 
-// Register
+/* ------------------ AUTH ROUTES ------------------ */
+
+// register
 app.post("/api/register", async (req, res) => {
   try {
     const { name, email, phone, password } = req.body || {};
@@ -87,7 +91,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// Login
+// login
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -108,14 +112,11 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Logout
 app.post("/api/logout", (req, res) => res.json({ success: true }));
-
-// Health
 app.get("/api/ping", (req, res) => res.json({ ok: true }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log("Backend running on port", PORT));
+app.listen(PORT, ()=>console.log("Backend running on port", PORT));
 
 
 
